@@ -10,11 +10,10 @@ import sys
 import textwrap
 from collections import ChainMap
 
-from lib4sbom.data.file import SBOMFile
 from lib4sbom.generator import SBOMGenerator
-from lib4sbom.license import LicenseScanner
 from lib4sbom.sbom import SBOM
-from lib4sbom.version import VERSION
+from sbom4files.version import VERSION
+from sbom4files.filescanner import FileScanner
 
 # CLI processing
 
@@ -129,102 +128,22 @@ def main(argv=None):
     file_dir = pathlib.Path(directory_location)
 
     # iterate directory and assemble SBOM items
-    sbom_file = SBOMFile()
+    file_scanner = FileScanner(args["debug"])
     sbom_files = {}
 
-    licensescanner = LicenseScanner()
-    id = 0
     file_process = {False: file_dir.iterdir(), True: file_dir.glob("**/*")}
     # iterdir() for current directory
     # Use glob() for recursive file_dir.glob('**/*'):
     # for entry in file_dir.iterdir():
     for entry in file_process[args["recurse"]]:
-        # check if it is a file
-        if entry.is_file():
-            sbom_file.initialise()
-            sbom_file.set_name(str(entry))
-            sbom_file.set_id("SPDXRef-File-" + str(id).zfill(4))
-            id += 1
-            # Attempt to determine file type
-            (mimetype, _) = mimetypes.guess_type(str(entry))
-            if mimetype is not None:
-                sbom_file.set_filetype(mimetype.split("/")[0])
-            else:
-                sbom_file.set_filetype("other")
-            # Calculate checksums for the file
-            sha1_hash = hashlib.sha1()
-            sha256_hash = hashlib.sha256()
-            sha512_hash = hashlib.sha512()
-            with open(entry, "rb") as f:
-                # Read and update hash string value in blocks of 4K
-                for byte_block in iter(lambda: f.read(4096), b""):
-                    sha1_hash.update(byte_block)
-                    sha256_hash.update(byte_block)
-                    sha512_hash.update(byte_block)
-                file_hash_1 = sha1_hash.hexdigest()
-                file_hash_256 = sha256_hash.hexdigest()
-                file_hash_512 = sha512_hash.hexdigest()
-            sbom_file.set_checksum("SHA1", file_hash_1)
-            sbom_file.set_checksum("SHA256", file_hash_256)
-            sbom_file.set_checksum("SHA512", file_hash_512)
-            # Attempt to determine license information
-            if args["debug"]:
-                print(f"Processing {entry} {mimetype}")
-            found_license = None
-            found_copyright = False
-            with open(entry, "r") as f:
-                try:
-                    # Binary files are likely to fail call to readlines()
-                    lines = f.readlines()
-                    for line in lines:
-                        # Search for SPDX licence string
-                        if "SPDX-License-Identifier:" in line:
-                            license = (
-                                line.split("SPDX-License-Identifier:", 1)[1]
-                                .strip()
-                                .rstrip("\n")
-                            )
-                            # Only include if valid license
-                            if licensescanner.find_license(license) != "UNKNOWN":
-                                sbom_file.set_licenseinfoinfile(license)
-                                sbom_file.set_licensecomment(
-                                    "<text>This information was automatically"
-                                    " extracted from the file.</text>"
-                                )
-                                if found_license is None:
-                                    found_license = license
-                                else:
-                                    found_license = found_license + " AND " + license
-                        elif "Copyright" in line and not found_copyright:
-                            copyright_text = (
-                                line.split("Copyright", 1)[1].strip().rstrip("\n")
-                            )
-                            sbom_file.set_copyrighttext(
-                                f"<text> Copyright {copyright_text}</text>"
-                            )
-                            found_copyright = True
-                except Exception as e:
-                    if args["debug"]:
-                        print(f"{e}")
-            # Update licence status
-            if found_license is not None:
-                sbom_file.set_licenseconcluded(found_license)
-            else:
-                # Default licence status
-                sbom_file.set_licenseconcluded("NOASSERTION")
-                sbom_file.set_licenseinfoinfile("NONE")
-                sbom_file.set_licensecomment(
-                    "<text>Unable to determine license from the file.</text>"
-                )
-            if not found_copyright:
-                sbom_file.set_copyrighttext("NOASSERTION")
-            sbom_files[sbom_file.get_name()] = sbom_file.get_file()
+        if file_scanner.scan_file(entry):
+            sbom_files[file_scanner.get_name()] = file_scanner.get_file()
 
     # Generate SBOM file
     my_sbom = SBOM()
     my_sbom.add_files(sbom_files)
 
-    sbom_gen = SBOMGenerator(sbom_type=args["sbom"], format=bom_format)
+    sbom_gen = SBOMGenerator(sbom_type=args["sbom"], format=bom_format, application = app_name, version = VERSION)
     sbom_gen.generate(
         project_name=args["project"],
         sbom_data=my_sbom.get_sbom(),
