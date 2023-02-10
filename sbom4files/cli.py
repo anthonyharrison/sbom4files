@@ -127,6 +127,10 @@ def main(argv=None):
     # Find files
     file_dir = pathlib.Path(directory_location)
 
+    if not file_dir.exists():
+        print("[ERROR] Directory not found.")
+        return -1
+
     # iterate directory and assemble SBOM items
     file_scanner = FileScanner(args["debug"])
     sbom_files = {}
