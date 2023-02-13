@@ -126,3 +126,5 @@ class FileScanner:
     def get_name(self):
         return self.sbom_file.get_name()
 
+    def get_value(self, attribute):
+        return self.sbom_file.get_value(attribute)
