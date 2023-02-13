@@ -4,6 +4,8 @@
 import hashlib
 import mimetypes
 
+from pathlib import Path
+
 from lib4sbom.data.file import SBOMFile
 from lib4sbom.license import LicenseScanner
 
@@ -53,6 +55,11 @@ class FileScanner:
                                 found_license = [license]
                             else:
                                 found_license.append(license)
+                    elif "SPDX-FileCopyrightText:" in line and not found_copyright:
+                        copyright_text = (
+                            line.split("SPDX-FileCopyrightText:", 1)[1].strip().rstrip("\n")
+                        )
+                        found_copyright = True
                     elif "Copyright" in line and not found_copyright:
                         copyright_text = (
                             line.split("Copyright", 1)[1].strip().rstrip("\n")
@@ -70,7 +77,7 @@ class FileScanner:
         if filename.is_file():
             processed = True
             self.sbom_file.set_name(str(filename))
-            self.sbom_file.set_id("SPDXRef-File-" + str(self.id).zfill(4))
+            self.sbom_file.set_id(str(self.id) + "-" + Path(filename).stem)
             self.id += 1
             # Attempt to determine file type
             (mimetype, _) = mimetypes.guess_type(str(filename))
