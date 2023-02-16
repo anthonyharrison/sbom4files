@@ -41,6 +41,11 @@ setup_kwargs = dict(
     ],
     python_requires=">=3.7",
     packages=find_packages(),
+    package_data={
+        "sbom4files": [
+            "filetypes/*.txt",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "sbom4files = sbom4files.cli:main",
