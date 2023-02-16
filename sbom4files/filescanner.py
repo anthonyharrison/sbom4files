@@ -15,7 +15,18 @@ class FileScanner:
         self.sbom_file = SBOMFile()
         self.licensescanner = LicenseScanner()
         self.debug = False
-        self.id = 0
+        self.id = 1
+        # Load mapping of file extensions to SPDX file types (non-Mime)
+        file_types_file = Path(__file__).resolve().parent / "filetypes" / "filetypes.txt"
+        self.file_types = {}
+        with open(file_types_file, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if line.startswith('['):
+                    type = line.replace('[','').replace(']','').strip()
+                    self.file_types[type]=[]
+                else:
+                    self.file_types[type].append(line.strip())
 
     def _generate_checksum(self, filename):
         # Calculate checksums for the file
@@ -71,19 +82,28 @@ class FileScanner:
         return found_license, found_copyright, copyright_text
 
     def scan_file(self, filename):
-        # check if it is a file
         processed = False
         self.sbom_file.initialise()
+        # Only process if it is a file
         if filename.is_file():
             processed = True
             self.sbom_file.set_name(str(filename))
             self.sbom_file.set_id(str(self.id) + "-" + Path(filename).stem)
             self.id += 1
             # Attempt to determine file type
+            file_ext = Path(filename).suffix
+            # Attempt to determine type of file
+            file_categorised = False
+            # Look for non-Mime type files
+            for type in self.file_types:
+                if file_ext in self.file_types[type]:
+                    self.sbom_file.set_filetype(type)
+                    file_categorised = True
             (mimetype, _) = mimetypes.guess_type(str(filename))
             if mimetype is not None:
+                # Mime type detected
                 self.sbom_file.set_filetype(mimetype.split("/")[0])
-            else:
+            elif not file_categorised:
                 self.sbom_file.set_filetype("other")
             # Checksum file
             file_hash_1, file_hash_256, file_hash_512 = self._generate_checksum(filename)

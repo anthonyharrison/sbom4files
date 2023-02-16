@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-import hashlib
-import mimetypes
 import os
 import pathlib
 import sys
@@ -12,6 +10,9 @@ from collections import ChainMap
 
 from lib4sbom.generator import SBOMGenerator
 from lib4sbom.sbom import SBOM
+from lib4sbom.data.package import SBOMPackage
+from lib4sbom.data.relationship import SBOMRelationship
+
 from sbom4files.version import VERSION
 from sbom4files.filescanner import FileScanner
 
@@ -134,6 +135,23 @@ def main(argv=None):
     # iterate directory and assemble SBOM items
     file_scanner = FileScanner(args["debug"])
     sbom_files = {}
+    sbom_packages = {}
+    sbom_relationships = []
+    sbom_relationship = SBOMRelationship()
+
+    # Create root package
+    sbom_package = SBOMPackage()
+    package_name = f'{args["project"]}-files'
+    sbom_package.set_name(package_name)
+    sbom_package.set_id(package_name)
+    sbom_package.set_filesanalysis(True)
+    sbom_packages[(sbom_package.get_name(), sbom_package.get_value('version'))] = sbom_package.get_package()
+    package_id = sbom_package.get_value("id")
+    package = sbom_package.get_name()
+    # And add relationship to root package
+    sbom_relationship.initialise()
+    sbom_relationship.set_relationship(args["project"], "DESCRIBES", package)
+    sbom_relationships.append(sbom_relationship.get_relationship())
 
     file_process = {False: file_dir.iterdir(), True: file_dir.glob("**/*")}
     # iterdir() for current directory
@@ -142,15 +160,23 @@ def main(argv=None):
     for entry in file_process[args["recurse"]]:
         if file_scanner.scan_file(entry):
             sbom_files[file_scanner.get_name()] = file_scanner.get_file()
+            # Add relationship
+            sbom_relationship.initialise()
+            sbom_relationship.set_relationship(package, "CONTAINS", file_scanner.get_name())
+            sbom_relationship.set_relationship_id(package_id, file_scanner.get_value("id"))
+            sbom_relationship.set_target_type("file")
+            sbom_relationships.append(sbom_relationship.get_relationship())
 
     # Generate SBOM file
-    my_sbom = SBOM()
-    my_sbom.add_files(sbom_files)
+    files_sbom = SBOM()
+    files_sbom.add_files(sbom_files)
+    files_sbom.add_packages(sbom_packages)
+    files_sbom.add_relationships(sbom_relationships)
 
     sbom_gen = SBOMGenerator(sbom_type=args["sbom"], format=bom_format, application = app_name, version = VERSION)
     sbom_gen.generate(
         project_name=args["project"],
-        sbom_data=my_sbom.get_sbom(),
+        sbom_data=files_sbom.get_sbom(),
         filename=args["output_file"],
     )
 
