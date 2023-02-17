@@ -2,29 +2,34 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import hashlib
-import mimetypes
-
 from pathlib import Path
 
+import magic
 from lib4sbom.data.file import SBOMFile
 from lib4sbom.license import LicenseScanner
 
-class FileScanner:
 
-    def __init__(self, debug = False):
+class FileScanner:
+    """
+    Simple SBOM Generator for file.
+    """
+
+    def __init__(self, debug=False):
         self.sbom_file = SBOMFile()
         self.licensescanner = LicenseScanner()
         self.debug = False
         self.id = 1
         # Load mapping of file extensions to SPDX file types (non-Mime)
-        file_types_file = Path(__file__).resolve().parent / "filetypes" / "filetypes.txt"
+        file_types_file = (
+            Path(__file__).resolve().parent / "filetypes" / "filetypes.txt"
+        )
         self.file_types = {}
         with open(file_types_file, "r") as f:
             lines = f.readlines()
             for line in lines:
-                if line.startswith('['):
-                    type = line.replace('[','').replace(']','').strip()
-                    self.file_types[type]=[]
+                if line.startswith("["):
+                    type = line.replace("[", "").replace("]", "").strip()
+                    self.file_types[type] = []
                 else:
                     self.file_types[type].append(line.strip())
 
@@ -68,7 +73,9 @@ class FileScanner:
                                 found_license.append(license)
                     elif "SPDX-FileCopyrightText:" in line and not found_copyright:
                         copyright_text = (
-                            line.split("SPDX-FileCopyrightText:", 1)[1].strip().rstrip("\n")
+                            line.split("SPDX-FileCopyrightText:", 1)[1]
+                            .strip()
+                            .rstrip("\n")
                         )
                         found_copyright = True
                     elif "Copyright" in line and not found_copyright:
@@ -87,7 +94,10 @@ class FileScanner:
         # Only process if it is a file
         if filename.is_file():
             processed = True
-            self.sbom_file.set_name(str(filename))
+            # Make absolute filename relative
+            cwd = str(Path.cwd())
+            relfilename = str(filename).replace(cwd, ".")
+            self.sbom_file.set_name(relfilename)
             self.sbom_file.set_id(str(self.id) + "-" + Path(filename).stem)
             self.id += 1
             # Attempt to determine file type
@@ -99,28 +109,31 @@ class FileScanner:
                 if file_ext in self.file_types[type]:
                     self.sbom_file.set_filetype(type)
                     file_categorised = True
-            (mimetype, _) = mimetypes.guess_type(str(filename))
+            mimetype = magic.from_file(str(filename), mime=True)
             if mimetype is not None:
                 # Mime type detected
                 self.sbom_file.set_filetype(mimetype.split("/")[0])
             elif not file_categorised:
                 self.sbom_file.set_filetype("other")
             # Checksum file
-            file_hash_1, file_hash_256, file_hash_512 = self._generate_checksum(filename)
+            file_hash_1, file_hash_256, file_hash_512 = self._generate_checksum(
+                filename
+            )
             self.sbom_file.set_checksum("SHA1", file_hash_1)
             self.sbom_file.set_checksum("SHA256", file_hash_256)
             self.sbom_file.set_checksum("SHA512", file_hash_512)
             # Attempt to determine license information
             if self.debug:
                 print(f"Processing {filename} {mimetype}")
-            found_license, found_copyright, copyright_text = self._find_licence(filename)
-
+            found_license, found_copyright, copyright_text = self._find_licence(
+                filename
+            )
             if found_license is not None:
                 for license in found_license:
                     self.sbom_file.set_licenseinfoinfile(license)
                     self.sbom_file.set_licensecomment(
-                    "<text>This information was automatically"
-                    " extracted from the file.</text>"
+                        "<text>This information was automatically"
+                        " extracted from the file.</text>"
                     )
                 if len(found_license) == 1:
                     self.sbom_file.set_licenseconcluded(found_license[0])
