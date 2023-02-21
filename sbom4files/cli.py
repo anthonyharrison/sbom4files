@@ -141,7 +141,7 @@ def main(argv=None):
 
     # Create root package
     sbom_package = SBOMPackage()
-    package_name = f'{args["project"]}-files'
+    package_name = f'{args["project"].replace(" ","-")}-files'
     sbom_package.set_name(package_name)
     sbom_package.set_id(package_name)
     sbom_package.set_filesanalysis(True)
