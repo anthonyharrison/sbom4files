@@ -94,7 +94,7 @@ class FileScanner:
         # Only process if it is a file
         if filename.is_file():
             processed = True
-            # Make absolute filename relative
+            # Make absolute filename relative to current directory
             cwd = str(Path.cwd())
             relfilename = str(filename).replace(cwd, ".")
             self.sbom_file.set_name(relfilename)
