@@ -28,3 +28,8 @@
 .rst
 [spdx]
 .spdx
+.spdx.json
+.spdx.yaml
+.spdx.yml
+.spdx.rdf
+.spdx.xml

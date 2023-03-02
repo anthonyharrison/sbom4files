@@ -100,15 +100,15 @@ class FileScanner:
             self.sbom_file.set_name(relfilename)
             self.sbom_file.set_id(str(self.id) + "-" + Path(filename).stem)
             self.id += 1
-            # Attempt to determine file type
-            file_ext = Path(filename).suffix
             # Attempt to determine type of file
             file_categorised = False
             # Look for non-Mime type files
             for type in self.file_types:
-                if file_ext in self.file_types[type]:
-                    self.sbom_file.set_filetype(type)
-                    file_categorised = True
+                for ext in self.file_types[type]:
+                    if str(filename).endswith(ext):
+                        self.sbom_file.set_filetype(type)
+                        file_categorised = True
+                        break
             mimetype = magic.from_file(str(filename), mime=True)
             if mimetype is not None:
                 # Mime type detected
