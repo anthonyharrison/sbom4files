@@ -66,11 +66,12 @@ class FileScanner:
                             .rstrip("\n")
                         )
                         # Only include if valid license
-                        if self.licensescanner.find_license(license) != "UNKNOWN":
+                        validated_license = self.licensescanner.find_license(license)
+                        if validated_license != "NOASSERTION":
                             if found_license is None:
-                                found_license = [license]
+                                found_license = [validated_license]
                             else:
-                                found_license.append(license)
+                                found_license.append(validated_license)
                     elif "SPDX-FileCopyrightText:" in line and not found_copyright:
                         copyright_text = (
                             line.split("SPDX-FileCopyrightText:", 1)[1]
