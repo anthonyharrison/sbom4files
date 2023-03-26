@@ -1,2 +1,2 @@
-lib4sbom
+lib4sbom >= 0.3.0
 python-magic
