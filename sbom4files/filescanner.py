@@ -132,10 +132,7 @@ class FileScanner:
             if found_license is not None:
                 for license in found_license:
                     self.sbom_file.set_licenseinfoinfile(license)
-                    self.sbom_file.set_licensecomment(
-                        "<text>This information was automatically"
-                        " extracted from the file.</text>"
-                    )
+                    self.sbom_file.set_licensecomment("This information was automatically extracted from the file.")
                 if len(found_license) == 1:
                     self.sbom_file.set_licenseconcluded(found_license[0])
                 else:
@@ -144,9 +141,7 @@ class FileScanner:
             else:
                 # Default licence status
                 self.sbom_file.set_licenseinfoinfile("NONE")
-                self.sbom_file.set_licensecomment(
-                    "<text>Unable to determine license from the file.</text>"
-                )
+                self.sbom_file.set_licensecomment("Unable to determine license from the file.")
                 self.sbom_file.set_licenseconcluded("NOASSERTION")
             if not found_copyright:
                 self.sbom_file.set_copyrighttext("NOASSERTION")
