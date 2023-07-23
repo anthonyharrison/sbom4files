@@ -132,9 +132,13 @@ class FileScanner:
             if found_license is not None:
                 for license in found_license:
                     self.sbom_file.set_licenseinfoinfile(license)
-                    license_comment = "This information was automatically extracted from the file."
+                    license_comment = (
+                        "This information was automatically extracted from the file."
+                    )
                     if self.licensescanner.deprecated(license):
-                        license_comment = f"{license_comment} {license} is now deprecated."
+                        license_comment = (
+                            f"{license_comment} {license} is now deprecated."
+                        )
                     self.sbom_file.set_licensecomment(license_comment)
                 if len(found_license) == 1:
                     self.sbom_file.set_licenseconcluded(found_license[0])
