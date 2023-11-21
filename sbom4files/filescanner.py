@@ -14,11 +14,16 @@ class FileScanner:
     Simple SBOM Generator for file.
     """
 
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, extensions=""):
         self.sbom_file = SBOMFile()
         self.licensescanner = LicenseScanner()
         self.debug = False
         self.id = 1
+        # Build list of extensions to ignore
+        self.extensions = []
+        for e in extensions.split(","):
+            self.extensions.append(e)
+
         # Load mapping of file extensions to SPDX file types (non-Mime)
         file_types_file = (
             Path(__file__).resolve().parent / "filetypes" / "filetypes.txt"
@@ -92,6 +97,9 @@ class FileScanner:
     def scan_file(self, filename):
         processed = False
         self.sbom_file.initialise()
+        # Check if extension is to be ignored
+        if any(str(Path(filename)).endswith(ext) for ext in self.extensions):
+            return processed
         # Only process if it is a file
         if filename.is_file():
             processed = True

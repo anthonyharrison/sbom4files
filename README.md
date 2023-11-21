@@ -41,13 +41,12 @@ pip install python-magic-bin
 ## Usage
 
 ```
-usage: sbom4files [-h] [-d DIRECTORY] [-p PROJECT] [-r] [--debug] 
-                  [--sbom {spdx,cyclonedx}] [--format {tag,json,yaml}] 
-                  [-o OUTPUT_FILE] [-V]
+usage: sbom4files [-h] [-d DIRECTORY] [-p PROJECT] [-r] 
+                  [-i IGNORE] [--debug] [--sbom {spdx,cyclonedx}] 
+                  [--format {tag,json,yaml}] [-o OUTPUT_FILE] [-V]
 
-```
+SBOM4Files generates a Software Bill of Materials for the files within a directory.
 
-```
 options:
   -h, --help            show this help message and exit
   -V, --version         show program's version number and exit
@@ -58,6 +57,8 @@ Input:
   -p PROJECT, --project PROJECT
                         Name of project
   -r, --recurse         Recurse directories
+  -i IGNORE, --ignore IGNORE
+                        Comma separated list of extensions to ignore
 
 Output:
   --debug               add debug information
@@ -67,7 +68,6 @@ Output:
                         format for SPDX software bill of materials (sbom) (default: tag)
   -o OUTPUT_FILE, --output-file OUTPUT_FILE
                         output filename (default: output to stdout)
-
 ```
 					
 ## Operation
@@ -76,6 +76,8 @@ The `--directory` option is used to identify the directory to be scanned. If thi
 Specifying the `--recurse` option will result in the files in subdirectories being included in the generation of the SBOM.
 
 The `--project` option is used to specify the name of a project to be referenced in the generated SBOM. This option must be specified.
+
+The `--ignore` option is used to specify the file extensions which are to be ignored. This option is optional.
 
 The `--sbom` option is used to specify the format of the generated SBOM (the default is SPDX). The `--format` option
 can be used to specify the formatting of the SPDX SBOM (the default is Tag Value format but JSON and YAML format is also supported).

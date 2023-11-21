@@ -20,7 +20,6 @@ from sbom4files.version import VERSION
 
 
 def main(argv=None):
-
     argv = argv or sys.argv
     app_name = "sbom4files"
     parser = argparse.ArgumentParser(
@@ -54,7 +53,13 @@ def main(argv=None):
         default=False,
         help="Recurse directories",
     )
-
+    input_group.add_argument(
+        "-i",
+        "--ignore",
+        action="store",
+        default="",
+        help="Comma separated list of extensions to ignore",
+    )
     output_group = parser.add_argument_group("Output")
     output_group.add_argument(
         "--debug",
@@ -90,6 +95,7 @@ def main(argv=None):
     defaults = {
         "directory": "",
         "project": "",
+        "ignore": "",
         "output_file": "",
         "recurse": False,
         "sbom": "spdx",
@@ -124,6 +130,7 @@ def main(argv=None):
         print("Output file", args["output_file"])
         print("Directory", directory_location)
         print("Project", args["project"])
+        print("Ignore file extensions", args["ignore"])
 
     # Find files
     file_dir = pathlib.Path(directory_location)
@@ -133,7 +140,7 @@ def main(argv=None):
         return -1
 
     # iterate directory and assemble SBOM items
-    file_scanner = FileScanner(args["debug"])
+    file_scanner = FileScanner(args["debug"], args["ignore"])
     sbom_files = {}
     sbom_packages = {}
     sbom_relationships = []
