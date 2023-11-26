@@ -17,12 +17,18 @@ class FileScanner:
     def __init__(self, debug=False, extensions=""):
         self.sbom_file = SBOMFile()
         self.licensescanner = LicenseScanner()
-        self.debug = False
+        self.debug = debug
         self.id = 1
         # Build list of extensions to ignore
         self.extensions = []
         for e in extensions.split(","):
-            self.extensions.append(e)
+            if len(e) > 0:
+                self.extensions.append(e)
+
+        if self.debug:
+            print("Ignoring file extensions")
+            for e in self.extensions:
+                print(e)
 
         # Load mapping of file extensions to SPDX file types (non-Mime)
         file_types_file = (
@@ -99,6 +105,8 @@ class FileScanner:
         self.sbom_file.initialise()
         # Check if extension is to be ignored
         if any(str(Path(filename)).endswith(ext) for ext in self.extensions):
+            if self.debug:
+                print(f"{str(Path(filename))} is being ignored")
             return processed
         # Only process if it is a file
         if filename.is_file():
@@ -117,6 +125,34 @@ class FileScanner:
                     if str(filename).endswith(ext):
                         self.sbom_file.set_filetype(type)
                         file_categorised = True
+                        if type == "source":
+                            # Attempt to work out language
+                            language_type = {
+                                ".c": "C",
+                                ".cc": "C++",
+                                ".cpp": "C++",
+                                ".cs": "C#",
+                                ".css": "CSS",
+                                ".cxx": "C++",
+                                ".go": "Go",
+                                ".h": "C",
+                                ".htm": "HTML",
+                                ".html": "HTML",
+                                ".java": "Java",
+                                ".js": "Javascript",
+                                ".php": "PHP",
+                                ".pl": "Perl",
+                                ".py": "Python",
+                                ".vb": "Visual Basic",
+                            }
+                            if ext in language_type:
+                                if self.debug:
+                                    print(
+                                        f"{str(filename)} is a {language_type[ext]} file"
+                                    )
+                                self.sbom_file.set_comment(
+                                    f"Source is {language_type[ext]}"
+                                )
                         break
             mimetype = magic.from_file(str(filename), mime=True)
             if mimetype is not None:
