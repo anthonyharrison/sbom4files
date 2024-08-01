@@ -8,8 +8,8 @@ import sys
 import textwrap
 from collections import ChainMap
 
-from lib4sbom.data.package import SBOMPackage
 from lib4sbom.data.document import SBOMDocument
+from lib4sbom.data.package import SBOMPackage
 from lib4sbom.data.relationship import SBOMRelationship
 from lib4sbom.generator import SBOMGenerator
 from lib4sbom.sbom import SBOM
