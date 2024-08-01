@@ -9,6 +9,7 @@ import textwrap
 from collections import ChainMap
 
 from lib4sbom.data.package import SBOMPackage
+from lib4sbom.data.document import SBOMDocument
 from lib4sbom.data.relationship import SBOMRelationship
 from lib4sbom.generator import SBOMGenerator
 from lib4sbom.sbom import SBOM
@@ -180,8 +181,13 @@ def main(argv=None):
             sbom_relationship.set_target_type("file")
             sbom_relationships.append(sbom_relationship.get_relationship())
 
+    # Lifecycle is always pre-build
+    sbom_document = SBOMDocument()
+    sbom_document.set_value("lifecycle", "pre-build")
+
     # Generate SBOM file
     files_sbom = SBOM()
+    files_sbom.add_document(sbom_document.get_document())
     files_sbom.add_files(sbom_files)
     files_sbom.add_packages(sbom_packages)
     files_sbom.add_relationships(sbom_relationships)
